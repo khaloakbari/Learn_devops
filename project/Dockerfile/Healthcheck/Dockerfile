@@ -2,10 +2,13 @@
 FROM nginx:1.18
 
 # Copy custom Nginx configuration
-COPY devops.conf /etc/nginx/conf.d/
+COPY health-check.conf /etc/nginx/conf.d/
+
+# Copy application files
+COPY index.html /usr/share/nginx/html
 
 # Expose port 9000 for the web service
-EXPOSE 9000
+EXPOSE 80
 
 # Define a health check for the service
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
