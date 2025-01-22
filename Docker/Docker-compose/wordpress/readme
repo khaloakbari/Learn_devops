@@ -1,0 +1,22 @@
+we are going to bring up Wordpress with docker compose file
+
+if we want the worldpress work currectly we need to docker container 
+   1-mysql-db
+   2-worldpress
+
+to setup docker-compose type this command: 
+    docker compose up -d
+
+to shutdown our docker container 
+    docker compose down 
+
+to shutdown our docker container and remove volume 
+   docker compose down -v
+
+if we want to check our mysql db
+   docker compose exec -it db /bin/bash
+      then mysql -u worldpress -p  
+
+if we want to check logs 
+   docker compose logs db
+   docker compose logs worldpress
