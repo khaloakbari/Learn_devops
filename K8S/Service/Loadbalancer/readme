@@ -1,0 +1,13 @@
+Apply the Manifests
+kubectl apply -f deployment.yaml
+kubectl apply -f service.yaml
+
+
+kubectl get svc nginx-service
+NAME             TYPE           CLUSTER-IP      EXTERNAL-IP      PORT(S)        AGE
+nginx-service   LoadBalancer   10.96.3.25      35.234.12.100    80:31234/TCP   2m
+
+
+Now, you can access Nginx from outside the cluster using:
+http://35.234.12.100
+
