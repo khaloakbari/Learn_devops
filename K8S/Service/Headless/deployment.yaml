@@ -1,1 +1,20 @@
-aa
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: my-db
+spec:
+  serviceName: my-db-service
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-db
+  template:
+    metadata:
+      labels:
+        app: my-db
+    spec:
+      containers:
+      - name: db-container
+        image: mysql:latest
+        ports:
+        - containerPort: 3306
