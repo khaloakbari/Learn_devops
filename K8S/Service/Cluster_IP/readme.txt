@@ -9,5 +9,7 @@ Check DNS inside a pod
 4)kubectl exec -it <pod-name> -n <namespace> -- /bin/bash
     curl http://<service-name>.<namespace>.svc.cluster.local
 
+
+
 check logs
 kubectl logs <pod-name> -n <namespace>
