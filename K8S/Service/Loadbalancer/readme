@@ -1,13 +1,141 @@
-Apply the Manifests
-kubectl apply -f deployment.yaml
-kubectl apply -f service.yaml
+### Summary
+- You’ve set up a KinD cluster with 3 nodes.
+- Installed MetalLB as a load balancer.
+- Deployed 3 Nginx instances and exposed them via a LoadBalancer service.
+- Tested the setup to ensure load balancing works.
 
+### Step 1: Install MetalLB for Load Balancing
+Since KinD runs locally, we need MetalLB to simulate a load balancer.
 
+1. Apply the MetalLB manifest:
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.7/manifests/namespace.yaml
+kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.7/manifests/metallb.yaml
+```
+
+2. Configure MetalLB with an IP address pool. Create a file named `metallb-config.yaml`:
+
+```yaml
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: default-pool
+  namespace: metallb-system
+spec:
+  addresses:
+  - 172.18.255.200-172.18.255.250 # Adjust based on your Docker network
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: default
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+  - default-pool
+```
+
+Apply it:
+
+```bash
+kubectl apply -f metallb-config.yaml
+```
+
+**Note:** The IP range `172.18.255.200-172.18.255.250` assumes KinD’s default Docker network (172.18.0.0/16). You can check your network with `docker network inspect kind` and adjust if needed.
+
+### Step 2: Deploy 3 Nginx Instances
+Create a deployment with 3 Nginx replicas. Save this as `nginx-deployment.yaml`:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+```
+
+Apply it:
+
+```bash
+kubectl apply -f nginx-deployment.yaml
+```
+
+Verify the pods:
+
+```bash
+kubectl get pods -l app=nginx
+```
+
+### Step 3: Expose Nginx with a LoadBalancer Service
+Create a service to expose the Nginx deployment with a LoadBalancer type. Save this as `nginx-service.yaml`:
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  selector:
+    app: nginx
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+  type: LoadBalancer
+```
+
+Apply it:
+
+```bash
+kubectl apply -f nginx-service.yaml
+```
+
+Check the service to get the external IP:
+
+```bash
 kubectl get svc nginx-service
-NAME             TYPE           CLUSTER-IP      EXTERNAL-IP      PORT(S)        AGE
-nginx-service   LoadBalancer   10.96.3.25      35.234.12.100    80:31234/TCP   2m
+```
 
+You should see an `EXTERNAL-IP` assigned from the MetalLB pool (e.g., `172.18.255.200`).
 
-Now, you can access Nginx from outside the cluster using:
-http://35.234.12.100
+### Step 4: Test the Setup
+Test the load balancer by accessing the external IP:
+
+```bash
+curl http://172.18.255.200
+```
+
+You should see the default Nginx welcome page. Repeat the curl command several times to confirm the load balancer is distributing requests across the 3 pods. To verify, you can check the pod logs or add a custom response:
+
+1. Exec into each pod and modify the index file to identify the instance:
+
+```bash
+kubectl get pods -l app=nginx -o name | while read pod; do
+  kubectl exec -it ${pod##*/} -- bash -c "echo 'Served by $(hostname)' > /usr/share/nginx/html/index.html"
+done
+```
+
+2. Test again with `curl http://172.18.255.200` multiple times. You should see responses like "Served by nginx-deployment-xyz" rotating between the 3 pods.
+
+### Step 5: Cleanup (Optional)
+When done, delete the cluster:
+
+```bash
+kind delete cluster --name nginx-test
+```
 
