@@ -1,0 +1,18 @@
+kubectl apply -f nginx-deployment.yaml
+kubectl apply -f nginx-service.yaml
+
+Access the Service
+----------------------------------------
+Find the external IP of a worker node:
+kubectl get nodes -o wide
+If your worker node’s IP is 192.168.1.100, you can access Nginx from outside the cluster using:
+http://192.168.1.100:30080
+
+
+----------------------------------------
+Summary
+Nginx Deployment: 3 replicas running inside the cluster
+NodePort Service: Exposes Nginx on port 30080 on all nodes
+External Access: http://<NODE_IP>:30080
+
+
